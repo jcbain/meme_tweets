@@ -1,15 +1,6 @@
 const axios = require('axios').default;
-const { twitterBearerSearch, twitterBearerHistorical } = require('../config')
-
-const getYesterday = () => {
-    let date = new Date();
-    date.setDate(date.getDate() - 1)
-    return date;
-}
-
-const formatDate = (date) => {
-    return `${date.getUTCFullYear().toString().padStart(2, 0)}-${(date.getUTCMonth() + 1).toString().padStart(2, 0)}-${(date.getUTCDay() + 1).toString().padStart(2, 0)}T06:00:00Z`
-}
+const { formatParams, createHeaders, chooseStream } = require('../helpers/tweets');
+const { getYesterday, formatDate } = require('../helpers/dates');
 
 const defaultParams = {
     startTime: formatDate(new Date('2013-01-01T06:00:00Z')),
@@ -21,26 +12,6 @@ const defaultParams = {
     ]
 }
 
-const formatParams = ( params ) => {
-    const startString = `start_time=${params.startTime}`;
-    const endString = `end_time=${params.endTime}`;
-    const fieldsString = `tweet.fields=${params.tweetFields.join(',')}`
-
-    return { startString, endString, fieldsString };
-
-}
-
-const createHeaders = ( isHistorical ) => {
-    const bearer = isHistorical && twitterBearerHistorical ? twitterBearerHistorical : twitterBearerSearch;
-    const headers = { headers: { AUTHORIZATION : `Bearer ${bearer}`} };
-    return headers;
-}
-
-const chooseStream = ( isHistorical ) => {
-    const type = isHistorical ? 'all' : 'recent';
-    const baseUrl = `https://api.twitter.com/2/tweets/search/${type}`;
-    return baseUrl
-}
 
 const getConversationByGeography = async (conversationId, lon, lat, nextToken, params=defaultParams) => {
     const headers = createHeaders(true);
@@ -54,8 +25,6 @@ const getConversationByGeography = async (conversationId, lon, lat, nextToken, p
     const response = await axios.get(fullEndpoint, headers);
 
     return response;
-
-
 }
 
 
