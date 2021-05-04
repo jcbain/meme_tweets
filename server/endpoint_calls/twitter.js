@@ -1,3 +1,4 @@
+const axios = require('axios').default;
 const { twitterBearerSearch, twitterBearerHistorical } = require('../config')
 
 const getYesterday = () => {
@@ -7,11 +8,11 @@ const getYesterday = () => {
 }
 
 const formatDate = (date) => {
-    return `${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDay()}T06:00:00`
+    return `${date.getUTCFullYear().toString().padStart(2, 0)}-${(date.getUTCMonth() + 1).toString().padStart(2, 0)}-${(date.getUTCDay() + 1).toString().padStart(2, 0)}T06:00:00Z`
 }
 
 const defaultParams = {
-    startTime: formatDate(new Date('2012-01-01T06:00:00Z')),
+    startTime: formatDate(new Date('2013-01-01T06:00:00Z')),
     endTime: formatDate(getYesterday()),
     tweetFields: [
         'id','text','author_id','context_annotations',
@@ -41,15 +42,25 @@ const chooseStream = ( isHistorical ) => {
     return baseUrl
 }
 
-const getConversationByGeography = (conversationId, lon, lat, params, nextToken) => {
+const getConversationByGeography = async (conversationId, lon, lat, nextToken, params=defaultParams) => {
     const headers = createHeaders(true);
     const baseUrl = chooseStream(true);
+    const query = `query=(point_radius:[${lon} ${lat} 25mi] conversation_id:${conversationId})`
     const nextString = nextToken ? `next_token=${nextToken}` : '';
+    const { startString, endString, fieldsString } = formatParams(params);
 
+    const endpointString = [query, startString, endString, fieldsString, nextString].join('&');
+    const fullEndpoint = `${baseUrl}?${endpointString}`;
+    const response = await axios.get(fullEndpoint, headers);
 
-    console.log(formatParams(defaultParams))
+    return response;
 
 
 }
 
-getConversationByGeography()
+
+getConversationByGeography('1384253384245465100', -74.0060, 40.7128)
+    .then(resp => console.log(resp.data))
+    .catch(err => console.log(err))
+
+    // https://api.twitter.com/2/tweets/search/all?start_time=2015-01-01T00:00:00Z&tweet.fields=id,text,author_id,context_annotations,geo,conversation_id,withheld,possibly_sensitive,referenced_tweets,public_metrics,created_at&query=(point_radius:[-74.0060 40.7128 25mi] conversation_id:1384253384245465100)&end_time=2021-04-21T00:00:00Z
