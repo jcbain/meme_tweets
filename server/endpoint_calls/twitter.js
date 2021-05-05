@@ -8,7 +8,7 @@ const defaultParams = {
     tweetFields: [
         'id','text','author_id','context_annotations',
         'geo','conversation_id','withheld','possibly_sensitive',
-        'referenced_tweets', 'public_metrics', 'created_at'
+        'referenced_tweets', 'public_metrics', 'created_at', 'lang'
     ]
 }
 
