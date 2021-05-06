@@ -3,7 +3,13 @@ const cors = require('cors');
 const app = express();
 const port = 8000;
 
-const cities = require('./data/cities.json')
+const knex = require('knex');
+const knexConfig = require('./knexfile');
+const db = knex(knexConfig.development);
+
+// const cities = require('./data/cities.json')
+const { getAllCities } = require('./queries/pullQueries');
+const { insertIntoTweetsTable, insertIntoReferencesTweetsTable, insertIntoTweetsMetricsTable, insertIntoEntitiesTable, insertIntoDomainsTable, insertIntoTweetContextTable } = require('./queries/insertQueries');
 
 const { getConversation, getConversationByGeography } = require('./endpoint_calls/twitter');
 
@@ -24,15 +30,27 @@ app.get('/tweets/conversations/:id', async (req, res) => {
 
 app.get('/tweets/conversations/:id/geo', async (req, res) => {
     const { id } = req.params;
+    const cities = await getAllCities(db);
+
     let counter = 0;
     let nextToken;
 
     const interval = setInterval( async() => {
         const currentCity = cities[counter];
-        const result = await getConversationByGeography(id, currentCity.longitude, currentCity.latitude, nextToken)
+        const result = await getConversationByGeography(id, currentCity.lng, currentCity.lat, nextToken)
         nextToken = result.data.meta.next_token ? result.data.meta.next_token : undefined;
-        console.log(result.data, currentCity.city)
-        console.log(result.data.data[0].context_annotations)
+        console.log(`inserting for ${currentCity.city_name}`)
+        insertIntoTweetsTable(db, result.data.data, currentCity.id).catch(err => console.log(err))
+        insertIntoReferencesTweetsTable(db, result.data.data).catch(err => console.log(err))
+        insertIntoTweetsMetricsTable(db, result.data.data).catch(err => console.log(err))
+        insertIntoEntitiesTable(db, result.data.data).catch(err => console.log(err))
+        insertIntoDomainsTable(db, result.data.data).catch(err => console.log(err))
+        insertIntoTweetContextTable(db, result.data.data).catch(err => console.log(err))
+
+
+        // console.log(result.data, currentCity.city_name)
+        // console.log(result.data.data[0].context_annotations)
+
 
         if( !result.data.meta.next_token ) {
             counter++
@@ -44,7 +62,6 @@ app.get('/tweets/conversations/:id/geo', async (req, res) => {
             return clearInterval(interval)   
         }
 
-        // counter++
     }, 30000)
 
     
