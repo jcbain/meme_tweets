@@ -63,26 +63,30 @@ app.get('/tweets/conversations/:id/geo', async (req, res) => {
 })
 
 app.get('/tweets/conversations/:id/geo/:city', async (req, res) => {
-    // const { id, city } = req.params;
-    // try {
-    //     const result = await getCityByName(db, city)
-    //     if(result.data.data){
-    //         await insertIntoTweetsTable(db, result.data.data, currentCity.id).catch(err => console.log(err))
-    //         await insertIntoReferencesTweetsTable(db, result.data.data).catch(err => console.log(err))
-    //         await insertIntoTweetsMetricsTable(db, result.data.data).catch(err => console.log(err))
-    //         await insertIntoEntitiesTable(db, result.data.data).catch(err => console.log(err))
-    //         await insertIntoDomainsTable(db, result.data.data).catch(err => console.log(err))
-    //         await insertIntoTweetContextTable(db, result.data.data).catch(err => console.log(err))
-    //     } else {
-    //         console.log(' no data ')
-    //     }
+    const { id, city } = req.params;
+    try {
+        const chosenCities = await getCityByName(db, city)
+        const currentCity = chosenCities[0];
+        let nextToken;
+        // TODO: build in next_token logic 
+        const result = await  getConversationByGeography(id, currentCity.lng, currentCity.lat, nextToken).catch(err => `err at fetching data: ${err}`)
+        if(result.data.data){
+            await insertIntoTweetsTable(db, result.data.data, currentCity.id).catch(err => console.log(err))
+            await insertIntoReferencesTweetsTable(db, result.data.data).catch(err => console.log(err))
+            await insertIntoTweetsMetricsTable(db, result.data.data).catch(err => console.log(err))
+            await insertIntoEntitiesTable(db, result.data.data).catch(err => console.log(err))
+            await insertIntoDomainsTable(db, result.data.data).catch(err => console.log(err))
+            await insertIntoTweetContextTable(db, result.data.data).catch(err => console.log(err))
+        } else {
+            console.log(' no data ')
+        }
 
-    // } catch (e) {
-    //     console.log(e)
-    //     res.status(400)
-    // } finally {
-    //     res.status(200)
-    // }
+    } catch (e) {
+        console.log(e)
+        res.status(400)
+    } finally {
+        res.status(200)
+    }
 
     // const result = await getConversationByGeography(id, lon, lat).catch(err => `err at fetching data: ${err}`)
 
