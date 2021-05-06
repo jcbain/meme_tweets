@@ -3,6 +3,12 @@ const getAllCities = async(db) => {
     return data;
 }
 
+const getCityByName = async(db, cityName) => {
+    const data = await db('cities').where('city_name', cityName);
+    return data;
+}
+
 module.exports = {
-    getAllCities
+    getAllCities,
+    getCityByName
 }

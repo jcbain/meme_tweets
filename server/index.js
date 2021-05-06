@@ -8,13 +8,13 @@ const knexConfig = require('./knexfile');
 const db = knex(knexConfig.development);
 
 // const cities = require('./data/cities.json')
-const { getAllCities } = require('./queries/pullQueries');
+const { getAllCities, getCityByName } = require('./queries/pullQueries');
 const { insertIntoTweetsTable, insertIntoReferencesTweetsTable, insertIntoTweetsMetricsTable, insertIntoEntitiesTable, insertIntoDomainsTable, insertIntoTweetContextTable } = require('./queries/insertQueries');
 
 const { getConversation, getConversationByGeography } = require('./endpoint_calls/twitter');
 
-// const numCities = cities.length;
-const numCities = 100;
+const numCities = cities.length;
+// const numCities = 1000;
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
@@ -37,47 +37,56 @@ app.get('/tweets/conversations/:id/geo', async (req, res) => {
 
     const interval = setInterval( async() => {
         const currentCity = cities[counter];
-        const result = await getConversationByGeography(id, currentCity.lng, currentCity.lat, nextToken)
+        const result = await getConversationByGeography(id, currentCity.lng, currentCity.lat, nextToken).catch(err => `err at fetching data: ${err}`)
         nextToken = result.data.meta.next_token ? result.data.meta.next_token : undefined;
-        console.log(`inserting for ${currentCity.city_name}`)
-        insertIntoTweetsTable(db, result.data.data, currentCity.id).catch(err => console.log(err))
-        insertIntoReferencesTweetsTable(db, result.data.data).catch(err => console.log(err))
-        insertIntoTweetsMetricsTable(db, result.data.data).catch(err => console.log(err))
-        insertIntoEntitiesTable(db, result.data.data).catch(err => console.log(err))
-        insertIntoDomainsTable(db, result.data.data).catch(err => console.log(err))
-        insertIntoTweetContextTable(db, result.data.data).catch(err => console.log(err))
 
-
-        // console.log(result.data, currentCity.city_name)
-        // console.log(result.data.data[0].context_annotations)
-
+        console.log(`attempting to inserting for ${currentCity.city_name}`)
+        if(result.data.data){
+            await insertIntoTweetsTable(db, result.data.data, currentCity.id).catch(err => console.log(err))
+            await insertIntoReferencesTweetsTable(db, result.data.data).catch(err => console.log(err))
+            await insertIntoTweetsMetricsTable(db, result.data.data).catch(err => console.log(err))
+            await insertIntoEntitiesTable(db, result.data.data).catch(err => console.log(err))
+            await insertIntoDomainsTable(db, result.data.data).catch(err => console.log(err))
+            await insertIntoTweetContextTable(db, result.data.data).catch(err => console.log(err))
+        } else {
+            console.log(' no data ')
+        }
 
         if( !result.data.meta.next_token ) {
             counter++
-
         }
-
         if(counter >= numCities - 1) {
-            res.send('done')
             return clearInterval(interval)   
         }
-
-    }, 30000)
-
-    
-
-
-    // const result = await getConversationByGeography(id, lon, lat)
-
-    // console.log(result.data)
+        res.status(200)
+    }, 5000)
 })
 
-app.get('/tweets/conversations/:id/geo/:lon/:lat', async (req, res) => {
-    const { id, lon, lat } = req.params;
+app.get('/tweets/conversations/:id/geo/:city', async (req, res) => {
+    // const { id, city } = req.params;
+    // try {
+    //     const result = await getCityByName(db, city)
+    //     if(result.data.data){
+    //         await insertIntoTweetsTable(db, result.data.data, currentCity.id).catch(err => console.log(err))
+    //         await insertIntoReferencesTweetsTable(db, result.data.data).catch(err => console.log(err))
+    //         await insertIntoTweetsMetricsTable(db, result.data.data).catch(err => console.log(err))
+    //         await insertIntoEntitiesTable(db, result.data.data).catch(err => console.log(err))
+    //         await insertIntoDomainsTable(db, result.data.data).catch(err => console.log(err))
+    //         await insertIntoTweetContextTable(db, result.data.data).catch(err => console.log(err))
+    //     } else {
+    //         console.log(' no data ')
+    //     }
 
-    const result = await getConversationByGeography(id, lon, lat)
+    // } catch (e) {
+    //     console.log(e)
+    //     res.status(400)
+    // } finally {
+    //     res.status(200)
+    // }
 
-    console.log(result.data)
+    // const result = await getConversationByGeography(id, lon, lat).catch(err => `err at fetching data: ${err}`)
+
+
 })
 
 app.listen(port, () => {
