@@ -13,14 +13,14 @@ const { insertIntoTweetsTable, insertIntoReferencesTweetsTable, insertIntoTweets
 
 const { getConversation, getConversationByGeography } = require('./endpoint_calls/twitter');
 
-const numCities = cities.length;
+
 // const numCities = 1000;
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.get('/tweets/conversations/:id', async (req, res) => {
+app.post('/tweets/conversations/:id', async (req, res) => {
     const { id } = req.params;
     const result = await getConversation(id, true)
     console.log(result.data)
@@ -28,10 +28,12 @@ app.get('/tweets/conversations/:id', async (req, res) => {
 })
 
 
-app.get('/tweets/conversations/:id/geo', async (req, res) => {
+app.post('/tweets/conversations/:id/geo', async (req, res) => {
     const { id } = req.params;
     const cities = await getAllCities(db);
+    const numCities = cities.length;
 
+    
     let counter = 0;
     let nextToken;
 
@@ -62,7 +64,7 @@ app.get('/tweets/conversations/:id/geo', async (req, res) => {
     }, 5000)
 })
 
-app.get('/tweets/conversations/:id/geo/:city', async (req, res) => {
+app.post('/tweets/conversations/:id/geo/:city', async (req, res) => {
     const { id, city } = req.params;
     try {
         const chosenCities = await getCityByName(db, city)

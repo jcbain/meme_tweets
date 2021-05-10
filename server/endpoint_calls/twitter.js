@@ -35,6 +35,7 @@ const getConversationByGeography = async (conversationId, lon, lat, nextToken, p
 
     const endpointString = [query, startString, endString, fieldsString, nextString].join('&');
     const fullEndpoint = `${baseUrl}?${endpointString}`;
+    console.log(fullEndpoint)
     const response = await axios.get(fullEndpoint, headers);
 
     return response;
