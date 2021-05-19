@@ -8,7 +8,8 @@ const defaultParams = {
     tweetFields: [
         'id','text','author_id','context_annotations',
         'geo','conversation_id','withheld','possibly_sensitive',
-        'referenced_tweets', 'public_metrics', 'created_at', 'lang'
+        'referenced_tweets', 'public_metrics', 'created_at', 'lang',
+        'entities'
     ]
 }
 
@@ -35,6 +36,21 @@ const getConversationByGeography = async (conversationId, lon, lat, nextToken, p
 
     const endpointString = [query, startString, endString, fieldsString, nextString].join('&');
     const fullEndpoint = `${baseUrl}?${endpointString}`;
+    const response = await axios.get(fullEndpoint, headers);
+
+    return response;
+}
+
+const getHashtagByGeography = async (hashtag, lon, lat, nextToken, params=defaultParams) => {
+    const headers = createHeaders(true);
+    const baseUrl = chooseStream(true);
+    const query = `query=(point_radius:[${lon} ${lat} 25mi] %23${hashtag})`
+    const nextString = nextToken ? `next_token=${nextToken}` : '';
+    const { startString, endString, fieldsString } = formatParams(params);
+
+
+    const endpointString = [query, startString, endString, fieldsString, nextString].join('&');
+    const fullEndpoint = `${baseUrl}?${endpointString}`;
     console.log(fullEndpoint)
     const response = await axios.get(fullEndpoint, headers);
 
@@ -43,7 +59,8 @@ const getConversationByGeography = async (conversationId, lon, lat, nextToken, p
 
 module.exports = {
     getConversation,
-    getConversationByGeography
+    getConversationByGeography,
+    getHashtagByGeography
 }
 
 

@@ -172,6 +172,67 @@ const insertIntoTweetContextTable = async (db, data) => {
     return inserted;
 }
 
+const cleanUpHashtagData = (data) => {
+    let cleanedData = [];
+    data.forEach(row => {
+        const { entities } = row;
+        if ( entities ) {
+            const { hashtags } = entities;
+            if ( hashtags ) {
+                hashtags.forEach(hash => {
+                    const newRow = { hashtag: hash.tag }
+                    cleanedData.push(newRow)
+                })
+            }
+        }
+    })
+    return cleanedData;
+}
+
+const insertIntoHashtagsTable = async (db, data) => {
+    const cleaned = cleanUpHashtagData(data)
+    console.log(cleaned)
+    const inserted = await db('hashtags')
+        .insert(cleaned)
+        .onConflict(['hashtag'])
+        .ignore()
+        .returning('*')
+        .then( res => {
+            return res
+        })
+
+    return inserted;
+}
+
+const cleanUpTweetHashtagData = (data, hashtagsTable) => {
+    let cleanedData = [];
+    data.forEach(row => {
+        const { id, entities } = row;
+        if ( entities ) {
+            const { hashtags } = entities;
+            if ( hashtags ) {
+                hashtags.forEach(hash => {
+                    const currentTag = hash.tag.toLowerCase();
+                    const currentRowInHashTable = hashtags.find(d => d.hashtag.toLowerCase() === currentTag);
+                    const newRow = { tweet_id: id, hashtag_id: currentRowInHashTable.id};
+                    cleanedData.push(newRow)
+                })
+            }
+        }
+    })
+    return cleanedData;
+}
+
+const insertIntoTweetHashtagsTable = async (db, data, hashtagsTable) => {
+    const cleaned = cleanUpTweetHashtagData(data, hashtagsTable)
+    const inserted = await db('tweet_hashtags')
+        .insert(cleaned)
+        .onConflict(['tweet_id', 'hashtag_id'])
+        .ignore()
+
+    return inserted;
+}
+
 
 module.exports = {
     insertIntoTweetsTable,
@@ -179,5 +240,7 @@ module.exports = {
     insertIntoTweetsMetricsTable,
     insertIntoEntitiesTable,
     insertIntoDomainsTable,
-    insertIntoTweetContextTable
+    insertIntoTweetContextTable,
+    insertIntoHashtagsTable,
+    insertIntoTweetHashtagsTable
 }
